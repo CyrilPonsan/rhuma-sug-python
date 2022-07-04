@@ -1,5 +1,7 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
+
 from . import crud, models, schemas
 from .database import SessionLocal, engine
 
@@ -7,22 +9,40 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+origins = [
+    "http://localhost",
+    "http://localhost:4200",
+]
 
-# Dependency
-def get_db():
-    db = SessionLocal()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.middleware("http")
+async def db_session_middleware(request: Request, call_next):
+    response = Response("Internal server error", status_code=500)
     try:
-        yield db
+        request.state.db = SessionLocal()
+        response = await call_next(request)
     finally:
-        db.close()
+        request.state.db.close()
+    return response
 
 
-@app.get("/catalogue", response_model=list[schemas.Produit])
+def get_db(request: Request):
+    return request.state.db
+
+
+@app.get("/catalogue/", response_model=list[schemas.Produit])
 def get_produits(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud.get_produits(db, skip, limit)
 
 
-@app.post("/produit", response_model=schemas.Produit)
+@app.post("/produit/", response_model=schemas.Produit)
 def create_produit(produit: schemas.ProduitCreate, db: Session = Depends(get_db)):
     return crud.create_produit(db=db, produit=produit)
 

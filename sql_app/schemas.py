@@ -49,6 +49,7 @@ class VenteCreate(VenteBase):
 
 class Vente(VenteBase):
     customer_id: int
+    achats: list[int]
 
     class Config:
         orm_mode = True
