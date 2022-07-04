@@ -9,11 +9,12 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# liste des domaines autorisés
 origins = [
-    "http://localhost",
     "http://localhost:4200",
 ]
 
+# politique CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -22,19 +23,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.middleware("http")
-async def db_session_middleware(request: Request, call_next):
-    response = Response("Internal server error", status_code=500)
+
+# Dependency
+def get_db():
+    db = SessionLocal()
     try:
-        request.state.db = SessionLocal()
-        response = await call_next(request)
+        yield db
     finally:
-        request.state.db.close()
-    return response
-
-
-def get_db(request: Request):
-    return request.state.db
+        db.close()
 
 
 @app.get("/catalogue/", response_model=list[schemas.Produit])
