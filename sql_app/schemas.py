@@ -33,7 +33,6 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
-    ventes: list[int] = []
 
     class Config:
         orm_mode = True
