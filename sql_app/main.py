@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from pydantic import BaseModel
@@ -56,12 +56,12 @@ class TokenData(BaseModel):
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-async def authenticate_user(user: models.User, plain_password):
+async def authenticate_user(db_user: models.User, plain_password):
     password_hasher = crud.pwd_context
-    if not user.hashed_password == password_hasher.hash(plain_password):
+    if not db_user.hashed_password == password_hasher.hash(plain_password):
         return False
-    user_dict = schemas.User(**user)
-    return user_dict
+    user = schemas.User(**db_user)
+    return user
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -118,13 +118,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/users/me/", response_model=schemas.User)
+@app.get("/users/me/")
 async def read_users_me(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     token_data = await get_current_user(token)
     db_user = crud.get_user_by_email(db=db, username=token_data.username)
     if not db_user:
         return {"message": "get off my lawn !"}
-    return db_user
+    return db_user.id
 
 
 @app.post("/vente/")
