@@ -129,12 +129,10 @@ async def read_users_me(db: Session = Depends(get_db), token: str = Depends(oaut
 
 @app.post("/vente/")
 def create_vente(
-        user_id: int,
-        vente: schemas.VenteCreate,
         # produit_in_panier = {"id": int, "quantite": int}
         produits_in_panier: list[dict],
         db: Session = Depends(get_db)):
-    vente_id = crud.create_vente(db=db, vente=vente, user_id=user_id).id
+    vente_id = crud.create_vente(db=db, user_id=4)
     for item in produits_in_panier:
         db_produit = crud.get_produit(db, produit_id=item["id"])
         crud.create_panier_record(db=db, vente_id=vente_id, produit=db_produit, quantite=item["quantite"])

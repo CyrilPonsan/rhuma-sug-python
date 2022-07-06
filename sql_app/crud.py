@@ -43,12 +43,12 @@ def create_produit(db: Session, produit: schemas.ProduitCreate):
     return db_produit
 
 
-def create_vente(db: Session, vente: schemas.VenteCreate, user_id: int):
+def create_vente(db: Session, user_id: int):
     db_vente = models.Vente(date=datetime.now(), customer_id=user_id)
     db.add(db_vente)
     db.commit()
     db.refresh(db_vente)
-    return db_vente
+    return db_vente.id
 
 
 def create_panier_record(db: Session, vente_id: int, produit: schemas.Produit, quantite: int):
