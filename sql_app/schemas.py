@@ -22,7 +22,8 @@ class Produit(ProduitBase):
 
 
 class UserBase(BaseModel):
-    email: str
+    # username représente l'email
+    username: str
     nom: str
     prenom: str
 
