@@ -27,8 +27,8 @@ def get_produits(db: Session, skip: int = 0, limit = 100):
 
 
 def create_user(db: Session, user: schemas.UserCreate):
-    fake_hashed_password = pwd_context.hash(user.password)
-    db_user = models.User(email=user.email, hashed_password=fake_hashed_password, nom=user.nom, prenom=user.prenom)
+    hashed_password = pwd_context.hash(user.password)
+    db_user = models.User(username=user.username, hashed_password=hashed_password, nom=user.nom, prenom=user.prenom)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

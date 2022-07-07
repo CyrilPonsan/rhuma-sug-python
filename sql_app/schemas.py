@@ -23,6 +23,8 @@ class Produit(ProduitBase):
 
 class UserBase(BaseModel):
     username: str
+    nom: str
+    prenom: str
 
 
 class UserCreate(UserBase):
@@ -31,8 +33,6 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
-    nom: str
-    prenom: str
 
     class Config:
         orm_mode = True

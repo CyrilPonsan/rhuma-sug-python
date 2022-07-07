@@ -64,6 +64,15 @@ async def authenticate_user(db_user: models.User, plain_password):
     return user
 
 
+async def is_email_available(username: str, db: Session):
+    db_user = crud.get_user_by_email(db=db, username=username)
+    if not db_user:
+        print("ok")
+        return True
+    print("oops")
+    return False
+
+
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
@@ -118,13 +127,20 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/users/me/")
+@app.get("/users/me/", response_model=schemas.User)
 async def read_users_me(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     token_data = await get_current_user(token)
     db_user = crud.get_user_by_email(db=db, username=token_data.username)
     if not db_user:
         return {"message": "get off my lawn !"}
-    return db_user.id
+    return db_user
+
+
+@app.post("/users/new", response_model=schemas.User)
+async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    if not await is_email_available(user.username, db):
+        raise HTTPException(status_code=404, detail="Email not available")
+    return crud.create_user(db=db, user=user)
 
 
 @app.post("/vente/")
