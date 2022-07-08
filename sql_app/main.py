@@ -67,9 +67,7 @@ async def authenticate_user(db_user: models.User, plain_password):
 async def is_email_available(username: str, db: Session):
     db_user = crud.get_user_by_email(db=db, username=username)
     if not db_user:
-        print("ok")
         return True
-    print("oops")
     return False
 
 
@@ -132,7 +130,7 @@ async def read_users_me(db: Session = Depends(get_db), token: str = Depends(oaut
     token_data = await get_current_user(token)
     db_user = crud.get_user_by_email(db=db, username=token_data.username)
     if not db_user:
-        return {"message": "get off my lawn !"}
+        raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
 
@@ -148,6 +146,7 @@ def create_vente(
         # produit_in_panier = {"id": int, "quantite": int}
         produits_in_panier: list[dict],
         db: Session = Depends(get_db)):
+    # id de la dernière vente enregistrée
     vente_id = crud.create_vente(db=db, user_id=4)
     for item in produits_in_panier:
         db_produit = crud.get_produit(db, produit_id=item["id"])
