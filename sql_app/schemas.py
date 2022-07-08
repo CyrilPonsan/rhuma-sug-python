@@ -1,7 +1,25 @@
 from pydantic import BaseModel
 from datetime import datetime
 
-from sql_app.models import Vente
+
+class AdresseBase(BaseModel):
+    nom: str
+    prenom: str
+    adresse: str
+    code_postal: str
+    ville: str
+
+
+class AdresseCreate(AdresseBase):
+    pass
+
+
+class Adresse(AdresseBase):
+    id: int
+    user_id: int
+
+    class Config:
+        orm_mode = True
 
 
 class ProduitBase(BaseModel):
@@ -23,8 +41,6 @@ class Produit(ProduitBase):
 
 class UserBase(BaseModel):
     username: str
-    nom: str
-    prenom: str
 
 
 class UserCreate(UserBase):

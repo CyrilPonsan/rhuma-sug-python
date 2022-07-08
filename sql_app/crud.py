@@ -28,7 +28,7 @@ def get_produits(db: Session, skip: int = 0, limit = 100):
 
 def create_user(db: Session, user: schemas.UserCreate):
     hashed_password = pwd_context.hash(user.password)
-    db_user = models.User(username=user.username, hashed_password=hashed_password, nom=user.nom, prenom=user.prenom)
+    db_user = models.User(username=user.username, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -57,3 +57,12 @@ def create_panier_record(db: Session, vente_id: int, produit: schemas.Produit, q
     db.commit()
     db.refresh(db_panier)
     return db_panier
+
+
+def create_fixtures(db: Session, liste_produits: list[schemas.ProduitCreate]):
+    for produit in liste_produits:
+        db_fixtures = models.Produit(nom=produit.nom, prix=produit.prix, description=produit.description)
+        db.add(db_fixtures)
+        db.commit()
+        db.refresh(db_fixtures)
+    return True

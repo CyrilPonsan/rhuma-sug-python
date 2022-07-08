@@ -9,9 +9,20 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(255), unique=True, index=True)
     hashed_password = Column(String(255))
+    ventes = relationship("Vente", back_populates="user")
+    adresses = relationship("Adresse", back_populates="user")
+
+
+class Adresse(Base):
+    __tablename__ = "adresse"
+    id = Column(Integer, primary_key=True, index=True)
     nom = Column(String(255))
     prenom = Column(String(255))
-    ventes = relationship("Vente", back_populates="user")
+    adresse = Column(String(255))
+    code_postal = Column(String(10))
+    ville = Column(String(255))
+    user_id = Column(Integer, ForeignKey("user.id"))
+    user = relationship("User", back_populates="adresses")
 
 
 class Produit(Base):

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import crud, models, schemas
+from . import crud, models, schemas, fixtures
 from .database import SessionLocal, engine
 
 # to get a string like this run:
@@ -58,10 +58,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def authenticate_user(db_user: models.User, plain_password):
     password_hasher = crud.pwd_context
-    if not db_user.hashed_password == password_hasher.hash(plain_password):
+    if not password_hasher.verify(plain_password, db_user.hashed_password):
         return False
-    user = schemas.User(**db_user)
-    return user
+    return True
 
 
 async def is_email_available(username: str, db: Session):
@@ -111,18 +110,12 @@ def create_produit(produit: schemas.ProduitCreate, db: Session = Depends(get_db)
 @app.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = crud.get_user_by_email(db, form_data.username)
-    if not authenticate_user(user, form_data.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    print(user)
-    return {"access_token": access_token, "token_type": "bearer"}
+    if await authenticate_user(user, form_data.password):
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+        return {"access_token": access_token, "token_type": "bearer"}
+    else:
+        return False
 
 
 @app.get("/users/me/", response_model=schemas.User)
@@ -142,13 +135,23 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/vente/")
-def create_vente(
+async def create_vente(
         # produit_in_panier = {"id": int, "quantite": int}
         produits_in_panier: list[dict],
-        db: Session = Depends(get_db)):
+        db: Session = Depends(get_db),
+        token: str = Depends(oauth2_scheme)):
+    token_data = await get_current_user(token)
+    # on récupère l'id de l'utilisateur qui passe la commande
+    user_id = crud.get_user_by_email(db=db, username=token_data.username).id
     # id de la dernière vente enregistrée
-    vente_id = crud.create_vente(db=db, user_id=4)
+    vente_id = crud.create_vente(db=db, user_id=user_id)
     for item in produits_in_panier:
         db_produit = crud.get_produit(db, produit_id=item["id"])
         crud.create_panier_record(db=db, vente_id=vente_id, produit=db_produit, quantite=item["quantite"])
     return vente_id
+
+
+@app.post('/fixtures/')
+def write_fixtures(liste_produits: list[schemas.ProduitCreate], db: Session = Depends(get_db)):
+    crud.create_fixtures(db=db, liste_produits=liste_produits)
+    return {"message": "Done"}
