@@ -1,17 +1,18 @@
 from datetime import timedelta, datetime
 
+import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-
-from . import crud, models, schemas, fixtures
-from .database import SessionLocal, engine
+from sql_app.database import engine, SessionLocal
+from sql_app import models, crud, schemas
 
 # to get a string like this run:
 # openssl rand -hex 32
+
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -155,3 +156,7 @@ async def create_vente(
 def write_fixtures(liste_produits: list[schemas.ProduitCreate], db: Session = Depends(get_db)):
     crud.create_fixtures(db=db, liste_produits=liste_produits)
     return {"message": "Done"}
+
+
+if __name__ == "__main__":
+    uvicorn.run("sql_app.main:app", host='127.0.0.1', port=8000, reload=True)
